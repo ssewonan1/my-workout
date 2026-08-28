@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,74 +14,135 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+button, .nav-btn, .btn, .chip, .cal-day, .rec-card, .hist-del, .view-btn, .cal-nav, .add-set-btn, .switch, input[type=checkbox]{touch-action:manipulation;}
 :root{
   --bg:#0f1115; --bg2:#15171d;
   --card:#1a1d24; --card2:#20242c;
   --ink:#f2f3f5; --ink2:#9aa0ab; --ink3:#5c6270;
   --line:#262a33;
-  --gold:#d4a017; --gold-soft:rgba(212,160,23,0.14);
+  --gold:#ff2e7e; --gold-soft:rgba(255,46,126,0.14);
+  --pink-light:#ff8fc9; --pink-light-soft:rgba(255,143,201,0.16);
+  --accent-grad:linear-gradient(135deg, #ff5fa0 0%, #ff2e7e 55%, #c9137a 100%);
+  --accent-grad-text:linear-gradient(120deg, var(--pink-light) 0%, var(--gold) 100%);
   --green:#34c759; --green-soft:rgba(52,199,89,0.14);
   --red:#ff453a; --red-soft:rgba(255,69,58,0.14);
   --cyan:#38bdf8; --cyan-soft:rgba(56,189,248,0.14);
   --muscle-off:#2a2f39; --muscle-on:#ff453a;
   --card-grad:linear-gradient(160deg, #21252e 0%, #191c22 100%);
-  --card-shadow:0 6px 18px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.03);
+  --card-shadow:0 10px 28px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
   --hair:1px solid rgba(255,255,255,0.07);
 }
-html{font-size:16px;}
+html{font-size:16px; height:100%; overscroll-behavior:none; touch-action:pan-y;}
 body{
   font-family:'Pretendard Variable',Pretendard,-apple-system,'Noto Sans KR',sans-serif;
   background:var(--bg); color:var(--ink); letter-spacing:-0.01em;
-  min-height:100vh; min-height:100dvh;
+  word-break:keep-all; overflow-wrap:break-word;
+  height:100%; height:100dvh;
+  overflow:hidden; overscroll-behavior:none; touch-action:pan-y;
   display:flex; justify-content:center;
 }
 .app{
-  width:100%; max-width:480px; min-height:100dvh;
+  width:100%; max-width:480px; height:100%; height:100dvh;
   display:flex; flex-direction:column;
   background:var(--bg);
   position:relative;
+  overflow-y:auto; overflow-x:hidden; touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  scrollbar-width:thin; scrollbar-color:rgba(255,46,126,0.4) transparent;
+}
+.app::-webkit-scrollbar{width:4px;}
+.app::-webkit-scrollbar-track{background:transparent;}
+.app::-webkit-scrollbar-thumb{background:linear-gradient(var(--gold), var(--pink-light)); border-radius:0;}
+.app::after{
+  content:''; position:fixed; inset:0; z-index:1; pointer-events:none;
+  opacity:0.035; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* header */
 header{
-  padding:20px 20px 14px; position:sticky; top:0; z-index:20;
+  padding:20px 20px 14px; padding-top:calc(20px + env(safe-area-inset-top));
+  position:sticky; top:0; z-index:20;
   background:linear-gradient(180deg, var(--bg) 70%, transparent);
 }
-.brand{font-size:0.68rem; font-weight:700; letter-spacing:0.3em; color:var(--gold);}
+.brand{
+  font-size:0.68rem; font-weight:700; letter-spacing:0.3em;
+  background:var(--accent-grad-text); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
 h1{font-size:1.5rem; font-weight:800; margin-top:4px; letter-spacing:-0.02em;}
 
 /* main content */
 main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
-.panel{display:none; animation:fadeIn .25s ease both;}
+.panel{display:none; animation:fadeIn .35s cubic-bezier(0.16,1,0.3,1) both;}
 .panel.active{display:block;}
 @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
 
 /* ===== running panel ===== */
 .run-stage{
-  background:var(--card-grad); border:var(--hair); border-radius:0; box-shadow:var(--card-shadow);
+  position:relative; overflow:hidden;
+  border:1px solid transparent; border-radius:0; box-shadow:var(--card-shadow);
+  background:linear-gradient(var(--card-grad)) padding-box, linear-gradient(150deg, rgba(255,143,201,0.55), rgba(255,46,126,0.12) 45%, rgba(255,46,126,0.35)) border-box;
   padding:28px 20px 24px; text-align:center; margin-bottom:16px;
 }
-.run-status{font-size:0.72rem; font-weight:700; letter-spacing:0.2em; color:var(--ink3); margin-bottom:18px;}
-.run-status.live{color:var(--green);}
-.run-status .dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; margin-right:6px; vertical-align:middle;}
-.run-status.live .dot{animation:pulse 1.2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.run-stage::before{
+  content:""; position:absolute; top:-70px; left:50%; transform:translateX(-50%);
+  width:300px; height:220px; background:radial-gradient(ellipse, rgba(255,46,126,0.18), transparent 70%);
+  pointer-events:none; animation:glowBreathe 5s ease-in-out infinite;
+}
+@keyframes glowBreathe{0%,100%{opacity:0.7; transform:translateX(-50%) scale(1);} 50%{opacity:1; transform:translateX(-50%) scale(1.08);}}
+.run-stage > *{position:relative;}
+.run-status{
+  font-size:0.72rem; font-weight:700; letter-spacing:0.2em; color:var(--ink3); margin-bottom:18px;
+  display:inline-flex; align-items:center; gap:9px;
+}
+.run-status .dot{position:relative; display:inline-block; width:8px; height:8px; border-radius:50%; background:currentColor;}
+.run-status.paused{color:var(--pink-light);}
+.run-status.live{color:var(--gold);}
+.run-status.live .dot{
+  background:var(--accent-grad); box-shadow:0 0 9px 1px rgba(255,46,126,0.75);
+  animation:liveDotBeat 1.6s ease-in-out infinite;
+}
+.run-status.live .dot::before, .run-status.live .dot::after{
+  content:''; position:absolute; inset:0; border-radius:50%; background:var(--gold);
+  animation:liveRing 1.8s cubic-bezier(0.15,0.6,0.35,1) infinite;
+}
+.run-status.live .dot::after{animation-delay:0.6s;}
+@keyframes liveDotBeat{0%,100%{transform:scale(1);} 50%{transform:scale(1.2);}}
+@keyframes liveRing{0%{transform:scale(1); opacity:0.6;} 100%{transform:scale(3.4); opacity:0;}}
 
-.run-metrics{display:grid; grid-template-columns:1fr 1fr; gap:14px 10px; margin-bottom:22px;}
+.run-metrics{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px 8px; margin-bottom:22px;}
 .metric-main{grid-column:1/-1;}
 .metric-main .val{font-size:3rem; font-weight:800; letter-spacing:-0.03em; font-variant-numeric:tabular-nums;}
 .metric-main .lbl{font-size:0.72rem; color:var(--ink2); font-weight:600; letter-spacing:0.1em; margin-top:2px;}
-.metric{background:var(--card2); border-radius:0; padding:14px 10px;}
-.metric .val{font-size:1.4rem; font-weight:700; font-variant-numeric:tabular-nums;}
-.metric .lbl{font-size:0.66rem; color:var(--ink2); font-weight:600; letter-spacing:0.08em; margin-top:3px;}
+.metric{background:var(--card2); border-radius:0; padding:12px 6px;}
+.metric .val{font-size:clamp(0.85rem, 4.2vw, 1.15rem); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap;}
+.metric .lbl{font-size:0.6rem; color:var(--ink2); font-weight:600; letter-spacing:0.03em; margin-top:3px;}
+.split-row{display:flex; align-items:center; justify-content:space-between; background:var(--card-grad); border:var(--hair); padding:10px 14px; margin-bottom:6px; box-shadow:var(--card-shadow);}
+.split-row .split-km{font-weight:700; font-size:0.85rem; color:var(--ink);}
+.split-row .split-pace{font-weight:800; font-size:0.95rem; font-variant-numeric:tabular-nums;}
+.split-row .split-delta{font-size:0.7rem; font-weight:700; margin-left:6px;}
+.split-delta.up{color:var(--red);}
+.split-delta.down{color:var(--green);}
 
 .run-controls{display:flex; gap:10px;}
 .btn{
   flex:1; border:none; border-radius:0; padding:16px 12px; font-size:0.95rem; font-weight:700;
-  cursor:pointer; transition:transform .12s ease, opacity .12s ease; font-family:inherit; letter-spacing:-0.01em;
+  cursor:pointer; transition:transform .18s cubic-bezier(0.34,1.56,0.64,1), opacity .12s ease, box-shadow .18s ease;
+  font-family:inherit; letter-spacing:-0.01em;
 }
-.btn:active{transform:scale(0.96);}
-.btn-gold{background:linear-gradient(135deg, #e8bd2c 0%, #b8850a 100%); color:#1a1305; box-shadow:0 4px 14px rgba(212,160,23,0.28);}
+.btn:active{transform:scale(0.955);}
+.btn-gold{
+  position:relative; overflow:hidden; isolation:isolate;
+  background:var(--accent-grad); color:#2a0616; box-shadow:0 6px 20px rgba(255,46,126,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.btn-gold::after{
+  content:''; position:absolute; top:0; left:-60%; width:45%; height:100%; z-index:1;
+  background:linear-gradient(115deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform:skewX(-18deg); pointer-events:none;
+  animation:btnShine 3.4s ease-in-out infinite;
+}
+@keyframes btnShine{0%,8%{left:-60%;} 45%,100%{left:130%;}}
 .btn-green{background:linear-gradient(135deg, #4ade80 0%, #16a34a 100%); color:#062910; box-shadow:0 4px 14px rgba(52,199,89,0.24);}
 .btn-red{background:linear-gradient(135deg, #ff6b60 0%, #dc2f24 100%); color:#2c0805; box-shadow:0 4px 14px rgba(255,69,58,0.24);}
 .btn-outline{background:var(--card2); color:var(--ink); border:var(--hair);}
@@ -93,9 +154,26 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 }
 .gps-warn.show{display:block;}
 
+.toggle-row{display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding:2px; font-size:0.8rem; color:var(--ink2); font-weight:600;}
+.switch{position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0;}
+.switch input{position:absolute; opacity:0; width:0; height:0;}
+.switch .slider{position:absolute; inset:0; cursor:pointer; background:var(--card2); border:1px solid var(--line); border-radius:24px; transition:background-color .15s ease, border-color .15s ease;}
+.switch .slider::before{content:""; position:absolute; left:2px; top:2px; width:18px; height:18px; border-radius:50%; background:var(--ink3); transition:transform .15s ease, background-color .15s ease;}
+.switch input:checked + .slider{background:var(--gold-soft); border-color:var(--gold);}
+.switch input:checked + .slider::before{transform:translateX(18px); background:var(--accent-grad); box-shadow:0 0 8px rgba(255,46,126,0.5);}
+
 /* ===== gym panel ===== */
-.section-title{font-size:0.72rem; font-weight:700; letter-spacing:0.16em; color:var(--ink2); margin:18px 0 10px;}
+.section-title{
+  font-size:0.72rem; font-weight:700; letter-spacing:0.16em; color:var(--ink2); margin:22px 0 10px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title::before{content:""; width:3px; height:12px; background:linear-gradient(180deg, var(--gold), var(--pink-light)); flex-shrink:0;}
 .section-title:first-child{margin-top:0;}
+.section-title-row{display:flex; align-items:center; justify-content:space-between; margin:22px 0 10px; gap:10px;}
+.section-title-row .section-title{margin:0;}
+.section-title-row:first-child{margin-top:0;}
+.text-link-btn{background:none; border:none; color:var(--gold); font-size:0.72rem; font-weight:700; font-family:inherit; cursor:pointer; letter-spacing:0.02em; flex-shrink:0;}
+.text-link-btn:active{opacity:0.7;}
 .gym-input-card{background:var(--card-grad); border:var(--hair); border-radius:0; padding:16px; margin-bottom:12px; box-shadow:var(--card-shadow);}
 .field{margin-bottom:12px;}
 .field label{font-size:0.72rem; color:var(--ink2); font-weight:600; display:block; margin-bottom:6px;}
@@ -103,7 +181,7 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 .today-stats{font-size:0.76rem; color:var(--ink2); margin:-6px 0 10px;}
 .field input{
   width:100%; background:var(--card2); border:1px solid var(--line); border-radius:0;
-  padding:12px 14px; color:var(--ink); font-size:0.95rem; font-family:inherit;
+  padding:12px 14px; color:var(--ink); font-size:0.95rem; font-family:inherit; color-scheme:dark;
 }
 .field input:focus{outline:none; border-color:var(--gold);}
 .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
@@ -122,7 +200,10 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 .set-row .set-detail{flex:1; color:var(--ink);}
 .set-row .set-del{color:var(--ink3); cursor:pointer; padding:4px 8px; font-size:0.8rem;}
 
-.today-empty{text-align:center; padding:30px 10px; color:var(--ink3); font-size:0.85rem;}
+.today-empty{
+  text-align:center; padding:26px 10px; color:var(--ink3); font-size:0.83rem;
+  border:1px dashed rgba(255,255,255,0.09); letter-spacing:0.01em;
+}
 
 /* ===== body map (부위 선택) ===== */
 .chip{
@@ -132,8 +213,8 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 }
 .chip:active{transform:scale(0.96);}
 .chip.active{background:var(--red-soft); border-color:var(--red); color:#ff8b83;}
-.sub-all{color:var(--gold); border-color:rgba(212,160,23,0.5); background:var(--gold-soft);}
-.sub-all.active{background:linear-gradient(135deg, #e8bd2c, #b8850a); border-color:var(--gold); color:#1a1305;}
+.sub-all{color:var(--gold); border-color:rgba(255,46,126,0.5); background:var(--gold-soft);}
+.sub-all.active{background:var(--accent-grad); border-color:var(--gold); color:#2a0616;}
 
 /* 상체/하체/코어/유산소 아코디언 리스트 */
 .acc-list{display:flex; flex-direction:column; gap:10px; margin-bottom:16px;}
@@ -141,7 +222,7 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
   position:relative; background:var(--card-grad); border:var(--hair); border-left:2px solid transparent;
   box-shadow:var(--card-shadow); transition:border-color .2s ease, box-shadow .2s ease;
 }
-.acc-item.open{border-color:rgba(212,160,23,0.4); border-left-color:var(--gold); box-shadow:var(--card-shadow), 0 0 0 1px rgba(212,160,23,0.12);}
+.acc-item.open{border-color:rgba(255,46,126,0.4); border-left-color:var(--gold); box-shadow:var(--card-shadow), 0 0 0 1px rgba(255,46,126,0.12);}
 .acc-header{
   width:100%; display:flex; align-items:center; gap:9px; padding:16px; background:none; border:none;
   color:var(--ink); font-family:inherit; font-size:0.88rem; font-weight:700; cursor:pointer; text-align:left;
@@ -206,7 +287,7 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 .rec-name-en{display:inline-block; font-size:0.6rem; font-weight:700; letter-spacing:0.06em; color:var(--ink3); text-transform:uppercase; margin-left:6px; vertical-align:middle; white-space:nowrap;}
 .rec-group-tag{
   display:inline-block; font-size:0.62rem; font-weight:800; letter-spacing:0.03em;
-  color:var(--gold); background:var(--gold-soft); border:1px solid rgba(212,160,23,0.3);
+  color:var(--gold); background:var(--gold-soft); border:1px solid rgba(255,46,126,0.3);
   padding:2px 7px; margin-bottom:6px;
 }
 .rec-view-tag{
@@ -230,25 +311,38 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
   padding:6px 0; margin-bottom:10px; cursor:pointer;
 }
 .cardio-card{
-  background:var(--gold-soft); border:1px solid rgba(212,160,23,0.35); border-radius:0; padding:14px 16px;
-  margin-bottom:10px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 14px rgba(212,160,23,0.08);
+  background:var(--gold-soft); border:1px solid rgba(255,46,126,0.35); border-radius:0; padding:14px 16px;
+  margin-bottom:10px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 14px rgba(255,46,126,0.08);
 }
 .cardio-card .txt{flex:1; font-size:0.84rem; color:var(--ink);}
-.cardio-card button{background:linear-gradient(135deg, #e8bd2c, #b8850a); color:#1a1305; border:none; border-radius:0; padding:9px 14px; font-weight:700; font-size:0.8rem; font-family:inherit; cursor:pointer;}
+.cardio-card button{background:var(--accent-grad); color:#2a0616; border:none; border-radius:0; padding:9px 14px; font-weight:700; font-size:0.8rem; font-family:inherit; cursor:pointer;}
 
 /* ===== history panel ===== */
 .stat-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(100px,1fr)); gap:10px; margin-bottom:18px;}
-.stat-card{background:var(--card-grad); border:var(--hair); border-radius:0; padding:16px; box-shadow:var(--card-shadow);}
-.stat-card .val{font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums;}
-.stat-card .val small{font-size:0.85rem; font-weight:600; color:var(--ink2);}
-.stat-card .lbl{font-size:0.7rem; color:var(--ink2); font-weight:600; margin-top:4px;}
+.stat-card{
+  position:relative; background:var(--card-grad); border:var(--hair);
+  border-radius:0; padding:14px 16px; box-shadow:var(--card-shadow); overflow:hidden;
+}
+.stat-card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:2px; background:linear-gradient(180deg, var(--pink-light), var(--gold));}
+.stat-card .val{font-size:clamp(1.05rem, 4.6vw, 1.6rem); font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15; white-space:nowrap;}
+.stat-card .val small{font-size:0.8em; font-weight:600; color:var(--ink2);}
+.stat-card .lbl{font-size:0.68rem; color:var(--ink2); font-weight:600; margin-top:5px; letter-spacing:0.01em; word-break:keep-all;}
+.stat-card.gold{
+  border:1px solid transparent;
+  background:linear-gradient(160deg, rgba(255,46,126,0.16) 0%, #191c22 65%) padding-box, linear-gradient(150deg, rgba(255,143,201,0.5), rgba(255,46,126,0.08) 60%) border-box;
+}
+.stat-card.gold::before{background:var(--accent-grad-text);}
+.stat-card.gold .val{
+  background:var(--accent-grad-text); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.stat-card.gold .val small{-webkit-text-fill-color:var(--ink2); background:none;}
 
 .month-summary{
   background:var(--card-grad); border:var(--hair); box-shadow:var(--card-shadow);
   padding:16px; margin-bottom:16px; display:grid; grid-template-columns:1fr 1fr; gap:14px 10px;
 }
 .month-summary .ms-item{}
-.month-summary .ms-val{font-size:1.15rem; font-weight:800; font-variant-numeric:tabular-nums;}
+.month-summary .ms-val{font-size:clamp(0.95rem, 4.4vw, 1.15rem); font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap;}
 .month-summary .ms-val small{font-size:0.7rem; font-weight:600; color:var(--ink2);}
 .month-summary .ms-lbl{font-size:0.68rem; color:var(--ink3); font-weight:600; margin-top:2px;}
 .month-summary .ms-empty{grid-column:1/-1; text-align:center; color:var(--ink3); font-size:0.82rem; padding:6px 0;}
@@ -273,12 +367,12 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 .run-trend-card{background:var(--card-grad); border:var(--hair); box-shadow:var(--card-shadow); margin-bottom:16px;}
 .run-trend-header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:18px 16px 0;}
 .rt-eyebrow{font-size:0.66rem; font-weight:700; letter-spacing:0.14em; color:var(--ink3); text-transform:uppercase;}
-.rt-hero{font-size:2.1rem; font-weight:800; letter-spacing:-0.02em; color:var(--ink); margin-top:3px; line-height:1;}
+.rt-hero{font-size:clamp(1.5rem, 8vw, 2.1rem); font-weight:800; letter-spacing:-0.02em; color:var(--ink); margin-top:3px; line-height:1; white-space:nowrap;}
 .rt-hero .rt-unit{font-size:0.95rem; font-weight:700; color:var(--ink2); margin-left:3px;}
 .rt-sub{font-size:0.78rem; color:var(--ink2); font-weight:600; margin-top:6px;}
 .rt-best{text-align:right; flex-shrink:0;}
-.rt-best-val{font-size:1.05rem; font-weight:800; color:var(--gold);}
-.rt-best-val small{font-size:0.68rem; font-weight:700; margin-left:1px;}
+.rt-best-val{font-size:1.05rem; font-weight:800; white-space:nowrap; background:var(--accent-grad-text); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+.rt-best-val small{font-size:0.68rem; font-weight:700; margin-left:1px; -webkit-text-fill-color:var(--gold); background:none;}
 .rt-best-lbl{font-size:0.64rem; color:var(--ink3); font-weight:600; margin-top:2px; letter-spacing:0.02em;}
 .rt-meta{padding:12px 16px 0; font-size:0.74rem; color:var(--ink3); font-weight:600;}
 .rt-delta{margin-left:6px; font-weight:800;}
@@ -316,17 +410,17 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 }
 .cal-day.empty{cursor:default;}
 .cal-day.today{color:var(--gold); font-weight:800;}
-.cal-day.selected{background:var(--gold); color:#1a1305; font-weight:800;}
+.cal-day.selected{background:var(--gold); color:#2a0616; font-weight:800;}
 .cal-day .dots{display:flex; gap:2px; height:5px;}
 .cal-day .dots i{width:5px; height:5px; border-radius:50%;}
 .cal-day .dots .dr{background:var(--gold);}
-.cal-day.selected .dots .dr{background:#1a1305;}
+.cal-day.selected .dots .dr{background:#2a0616;}
 .cal-day .dots .dg{background:var(--green);}
 .cal-day.selected .dots .dg{background:#062910;}
 .cal-day .dots .dc{background:var(--cyan);}
 .cal-day.selected .dots .dc{background:#052a38;}
 .cal-day .cal-weight{display:block; height:7px; font-size:0.5rem; line-height:7px; color:var(--ink3); font-weight:700;}
-.cal-day.selected .cal-weight{color:#1a1305;}
+.cal-day.selected .cal-weight{color:#2a0616;}
 .cal-legend{display:flex; gap:14px; justify-content:center; margin-top:12px; font-size:0.68rem; color:var(--ink2); flex-wrap:wrap;}
 .cal-legend span{display:flex; align-items:center; gap:5px;}
 .cal-legend i{width:7px; height:7px; border-radius:50%; display:inline-block;}
@@ -336,17 +430,20 @@ main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
 
 /* ===== 운동 상세가이드 오버레이 ===== */
 .guide-overlay{
-  position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:none;
+  position:fixed; inset:0; background:rgba(6,7,10,0.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  z-index:100; display:none;
   align-items:flex-end; justify-content:center;
 }
 .guide-overlay.show{display:flex;}
 .guide-sheet{
   width:100%; max-width:480px; max-height:86vh; overflow-y:auto; background:var(--card-grad);
-  border-top:var(--hair); box-shadow:0 -12px 32px rgba(0,0,0,0.4);
+  border-top:1px solid transparent;
+  border-image:linear-gradient(90deg, var(--pink-light), var(--gold)) 1;
+  box-shadow:0 -16px 40px rgba(0,0,0,0.5);
   border-radius:0; padding:14px 20px calc(24px + env(safe-area-inset-bottom));
-  position:relative; animation:sheetUp .25s ease both;
+  position:relative; animation:sheetUp .35s cubic-bezier(0.16,1,0.3,1) both;
 }
-@keyframes sheetUp{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+@keyframes sheetUp{from{transform:translateY(40px); opacity:0;} to{transform:translateY(0); opacity:1;}}
 .guide-close{
   position:absolute; top:14px; right:16px; background:var(--card2); border:none; color:var(--ink2);
   width:30px; height:30px; border-radius:0; font-size:0.9rem; cursor:pointer;
@@ -380,20 +477,25 @@ nav{
   z-index:30;
 }
 .nav-btn{
-  flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+  flex:1; min-height:52px; background:none; border:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   padding:6px 4px; color:var(--ink3); font-family:inherit; cursor:pointer;
 }
 .nav-btn .icon{width:22px; height:22px; display:flex; align-items:center; justify-content:center;}
 .nav-btn .icon svg{width:100%; height:100%;}
 .nav-btn .txt{font-size:0.66rem; font-weight:700; letter-spacing:0.02em;}
 .nav-btn.active{color:var(--gold);}
+.nav-btn.active .icon{filter:drop-shadow(0 0 5px rgba(255,46,126,0.55));}
 
 .toast{
-  position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
-  background:var(--card2); border:1px solid var(--line); color:var(--ink); padding:12px 20px; border-radius:0;
-  font-size:0.85rem; font-weight:600; z-index:50; transition:all .25s ease; pointer-events:none; white-space:nowrap;
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(14px) scale(0.96); opacity:0;
+  background:rgba(26,29,36,0.85); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border:1px solid transparent;
+  background:linear-gradient(rgba(26,29,36,0.88), rgba(26,29,36,0.88)) padding-box, linear-gradient(135deg, var(--pink-light), var(--gold)) border-box;
+  color:var(--ink); padding:12px 22px; border-radius:0;
+  font-size:0.85rem; font-weight:600; z-index:50; transition:all .3s cubic-bezier(0.16,1,0.3,1); pointer-events:none; white-space:nowrap;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
 }
-.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0) scale(1);}
 </style>
 </head>
 <body>
@@ -418,15 +520,26 @@ nav{
             <div class="lbl">거리 (km)</div>
           </div>
           <div class="metric">
+            <div class="val" id="runPaceCurrent">--'--"</div>
+            <div class="lbl">현재 페이스</div>
+          </div>
+          <div class="metric">
             <div class="val" id="runPace">--'--"</div>
-            <div class="lbl">평균 페이스 (/km)</div>
+            <div class="lbl">평균 페이스</div>
           </div>
         </div>
         <div class="run-controls" id="runControls">
           <button class="btn btn-gold" id="btnStart">시작</button>
         </div>
+        <div class="toggle-row">
+          <span>러닝 중 화면 꺼짐 방지</span>
+          <label class="switch"><input type="checkbox" id="wakeLockToggle" checked><span class="slider"></span></label>
+        </div>
         <div class="gps-warn" id="gpsWarn"></div>
       </div>
+
+      <div class="section-title" id="splitsTitle" style="display:none;">구간 기록 (1km마다)</div>
+      <div id="splitsList"></div>
 
       <div class="section-title">이번주 러닝</div>
       <div class="stat-grid" id="runWeekStats"></div>
@@ -434,7 +547,23 @@ nav{
       <div class="section-title">개인 기록</div>
       <div class="stat-grid" id="runPRStats"></div>
 
-      <div class="section-title">최근 기록</div>
+      <div class="section-title-row">
+        <div class="section-title">최근 기록</div>
+        <button class="text-link-btn" id="btnManualRunToggle">+ 직접 입력</button>
+      </div>
+      <div class="gym-input-card" id="manualRunCard" style="display:none;">
+        <div class="field"><label>날짜</label><input type="date" id="manualRunDate"></div>
+        <div class="field"><label>거리 (km)</label><input type="number" id="manualRunDist" inputmode="decimal" step="0.01" placeholder="5.00"></div>
+        <div class="field">
+          <label>시간</label>
+          <div class="row3">
+            <input type="number" id="manualRunH" inputmode="numeric" placeholder="시간" min="0">
+            <input type="number" id="manualRunM" inputmode="numeric" placeholder="분" min="0" max="59">
+            <input type="number" id="manualRunS" inputmode="numeric" placeholder="초" min="0" max="59">
+          </div>
+        </div>
+        <button class="add-set-btn" id="btnSaveManualRun">기록 저장</button>
+      </div>
       <div id="runRecentList"></div>
     </section>
 
@@ -456,13 +585,6 @@ nav{
       <div id="gymLog" style="display:none;">
         <button class="back-link" id="btnBackToBody">‹ 부위 다시 선택</button>
         <div class="selected-chips" id="selectedChipsView"></div>
-
-        <div id="cardioSection" style="display:none;">
-          <div class="section-title">유산소 운동</div>
-          <div class="rec-list" id="cardioRecList"></div>
-          <div class="section-title">오늘 유산소</div>
-          <div id="cardioTodayList"><div class="today-empty">아직 기록한 유산소가 없어요</div></div>
-        </div>
 
         <div id="strengthSection">
           <div class="section-title" id="recTitle">추천 운동</div>
@@ -489,6 +611,13 @@ nav{
           <div id="todayList"><div class="today-empty">아직 기록한 운동이 없어요</div></div>
 
           <button class="btn btn-gold" id="btnFinishGym" style="width:100%; margin-top:6px; display:none;">오늘 운동 저장</button>
+        </div>
+
+        <div id="cardioSection" style="display:none;">
+          <div class="section-title">유산소 운동</div>
+          <div class="rec-list" id="cardioRecList"></div>
+          <div class="section-title">오늘 유산소</div>
+          <div id="cardioTodayList"><div class="today-empty">아직 기록한 유산소가 없어요</div></div>
         </div>
       </div>
     </section>
@@ -684,6 +813,73 @@ let startTs = null;
 let elapsedBeforePause = 0;
 let totalDist = 0; // meters
 let lastPos = null;
+let wakeLock = null;
+let recentSamples = []; // 실시간 페이스 계산용 최근 위치 샘플 {t, dist}
+let splits = []; // 구간 기록 {km, time, splitSec}
+let lastSplitKm = 0;
+
+/* 1km마다 울리는 알림음 - 외부 파일 없이 Web Audio로 직접 합성 */
+let audioCtx = null;
+function unlockAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+function playSplitAlert(){
+  try{
+    if(!audioCtx) return;
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+    const thump = ctx.createOscillator();
+    const thumpGain = ctx.createGain();
+    thump.type = 'triangle';
+    thump.frequency.setValueAtTime(190, now);
+    thump.frequency.exponentialRampToValueAtTime(55, now+0.13);
+    thumpGain.gain.setValueAtTime(0.55, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, now+0.16);
+    thump.connect(thumpGain).connect(ctx.destination);
+    thump.start(now); thump.stop(now+0.18);
+    [880, 1318.5].forEach((freq,i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = now + 0.06 + i*0.09;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.32, t+0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t+0.26);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t); osc.stop(t+0.28);
+    });
+    if(navigator.vibrate) navigator.vibrate([40,30,40]);
+  }catch(e){}
+}
+
+// 화면이 자동으로 잠기면 GPS watchPosition이 멈추므로, 켜져있으면 러닝 중엔 화면이 안 꺼지게 잡아둠 (사용자가 직접 켜고 끌 수 있음)
+$('#wakeLockToggle').checked = load('wa_wakelock_on', true);
+$('#wakeLockToggle').addEventListener('change', ()=>{
+  save('wa_wakelock_on', $('#wakeLockToggle').checked);
+  if($('#wakeLockToggle').checked && runState==='running') requestWakeLock();
+  else releaseWakeLock();
+});
+async function requestWakeLock(){
+  if(!$('#wakeLockToggle').checked) return;
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+    }
+  }catch(e){ /* 지원 안 하거나 거부된 경우 - 무시하고 계속 진행 */ }
+}
+function releaseWakeLock(){
+  if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && runState==='running' && !wakeLock){
+    requestWakeLock();
+  }
+});
 
 function haversine(lat1,lon1,lat2,lon2){
   const R = 6371000;
@@ -704,16 +900,44 @@ function fmtPace(sec, meters){
   const s = Math.round((minPerKm - m)*60);
   return `${m}'${String(s).padStart(2,'0')}"`;
 }
+// 러닝 소모 칼로리 추정: 체중(kg) x 거리(km) x 1.036 (러닝 표준 근사식) - 체중 기록이 없으면 계산 불가
+function estimateRunCalories(distanceMeters){
+  const weights = load('wa_weights', []);
+  if(weights.length===0) return null;
+  const latest = weights.slice().sort((a,b)=> new Date(b.date)-new Date(a.date))[0];
+  return Math.round(latest.weight * (distanceMeters/1000) * 1.036);
+}
 function elapsedSec(){
   if(runState==='idle') return 0;
   if(runState==='paused') return elapsedBeforePause;
   return elapsedBeforePause + (Date.now()-startTs)/1000;
+}
+function currentPaceStr(){
+  if(recentSamples.length < 2) return "--'--\"";
+  const first = recentSamples[0], last = recentSamples[recentSamples.length-1];
+  const dt = (last.t - first.t)/1000, dd = last.dist - first.dist;
+  if(dt < 5 || dd < 10) return "--'--\"";
+  return fmtPace(dt, dd);
+}
+function renderSplits(){
+  $('#splitsTitle').style.display = splits.length ? '' : 'none';
+  $('#splitsList').innerHTML = splits.slice().reverse().map((s,i)=>{
+    const prev = splits[splits.length-1-i-1];
+    let deltaTxt = '';
+    if(prev){
+      const diff = s.splitSec - prev.splitSec;
+      if(diff >= 2) deltaTxt = `<span class="split-delta up">▲ ${Math.round(diff)}초</span>`;
+      else if(diff <= -2) deltaTxt = `<span class="split-delta down">▼ ${Math.round(Math.abs(diff))}초</span>`;
+    }
+    return `<div class="split-row"><span class="split-km">${s.km}km</span><span><span class="split-pace">${fmtPace(s.splitSec, 1000)}/km</span>${deltaTxt}</span></div>`;
+  }).join('');
 }
 function updateRunUI(){
   const el = elapsedSec();
   $('#runTime').textContent = fmtTime(el);
   $('#runDist').textContent = (totalDist/1000).toFixed(2);
   $('#runPace').textContent = fmtPace(el, totalDist);
+  $('#runPaceCurrent').textContent = currentPaceStr();
 }
 function onGeoUpdate(pos){
   const {latitude, longitude, accuracy} = pos.coords;
@@ -723,6 +947,21 @@ function onGeoUpdate(pos){
     if(d > 2 && d < 100) totalDist += d; // GPS 튐 방지: 2m~100m 사이만 누적
   }
   lastPos = {lat:latitude, lon:longitude};
+
+  const now = Date.now();
+  recentSamples.push({t:now, dist:totalDist});
+  const cutoff = now - 20000; // 최근 20초 구간으로 실시간 페이스 계산
+  while(recentSamples.length > 2 && recentSamples[0].t < cutoff) recentSamples.shift();
+
+  const currentKm = Math.floor(totalDist/1000);
+  if(currentKm > lastSplitKm){
+    const elapsed = elapsedSec();
+    const prevTime = splits.length ? splits[splits.length-1].time : 0;
+    splits.push({km:currentKm, time:elapsed, splitSec:elapsed-prevTime});
+    lastSplitKm = currentKm;
+    renderSplits();
+    playSplitAlert();
+  }
 }
 function onGeoError(err){
   $('#gpsWarn').textContent = 'GPS 신호를 가져올 수 없어요: ' + err.message + ' (HTTPS 연결과 위치 권한을 확인하세요)';
@@ -733,16 +972,16 @@ function renderRunControls(){
   const status = $('#runStatus');
   if(runState==='idle'){
     c.innerHTML = '<button class="btn btn-gold" id="btnStart">시작</button>';
-    status.innerHTML = '<span class="dot"></span>준비됨'; status.classList.remove('live');
+    status.innerHTML = '<span class="dot"></span>준비됨'; status.classList.remove('live','paused');
     $('#btnStart').addEventListener('click', startRun);
   } else if(runState==='running'){
     c.innerHTML = '<button class="btn btn-outline" id="btnPause">일시정지</button><button class="btn btn-red" id="btnStop">종료</button>';
-    status.innerHTML = '<span class="dot"></span>진행중'; status.classList.add('live');
+    status.innerHTML = '<span class="dot"></span>진행중'; status.classList.add('live'); status.classList.remove('paused');
     $('#btnPause').addEventListener('click', pauseRun);
     $('#btnStop').addEventListener('click', stopRun);
   } else if(runState==='paused'){
     c.innerHTML = '<button class="btn btn-green" id="btnResume">재개</button><button class="btn btn-red" id="btnStop">종료</button>';
-    status.innerHTML = '<span class="dot"></span>일시정지'; status.classList.remove('live');
+    status.innerHTML = '<span class="dot"></span>일시정지'; status.classList.remove('live'); status.classList.add('paused');
     $('#btnResume').addEventListener('click', resumeRun);
     $('#btnStop').addEventListener('click', stopRun);
   }
@@ -751,9 +990,12 @@ function startRun(){
   if(!navigator.geolocation){ onGeoError({message:'이 브라우저는 위치 기능을 지원하지 않아요'}); return; }
   $('#gpsWarn').classList.remove('show');
   totalDist = 0; elapsedBeforePause = 0; lastPos = null;
+  recentSamples = []; splits = []; lastSplitKm = 0; renderSplits();
   startTs = Date.now(); runState = 'running';
   watchId = navigator.geolocation.watchPosition(onGeoUpdate, onGeoError, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
   timerId = setInterval(updateRunUI, 1000);
+  requestWakeLock();
+  unlockAudio();
   renderRunControls(); updateRunUI();
 }
 function pauseRun(){
@@ -761,26 +1003,31 @@ function pauseRun(){
   runState = 'paused';
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
   clearInterval(timerId);
-  lastPos = null;
+  lastPos = null; recentSamples = [];
+  releaseWakeLock();
   renderRunControls(); updateRunUI();
 }
 function resumeRun(){
-  startTs = Date.now(); runState = 'running'; lastPos = null;
+  startTs = Date.now(); runState = 'running'; lastPos = null; recentSamples = [];
   watchId = navigator.geolocation.watchPosition(onGeoUpdate, onGeoError, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
   timerId = setInterval(updateRunUI, 1000);
+  requestWakeLock();
+  unlockAudio();
   renderRunControls();
 }
 function stopRun(){
   const el = elapsedSec();
   if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; }
   clearInterval(timerId);
+  releaseWakeLock();
   if(totalDist>10 && el>10){
     const runs = load('wa_runs', []);
-    runs.unshift({id:Date.now(), date:new Date().toISOString(), duration:Math.round(el), distance:Math.round(totalDist)});
+    runs.unshift({id:Date.now(), date:new Date().toISOString(), duration:Math.round(el), distance:Math.round(totalDist), splits:splits.slice()});
     save('wa_runs', runs);
     showToast(`저장완료 · ${(totalDist/1000).toFixed(2)}km`);
   }
   runState = 'idle'; totalDist=0; elapsedBeforePause=0; lastPos=null;
+  recentSamples = []; splits = []; lastSplitKm = 0; renderSplits();
   renderRunControls(); updateRunUI();
   renderRunHome();
 }
@@ -804,9 +1051,9 @@ function renderRunHome(){
     const fastest = runs.reduce((a,r)=> (r.duration/r.distance) < (a.duration/a.distance) ? r : a, runs[0]);
     const longestTime = runs.reduce((a,r)=> r.duration>a.duration ? r : a, runs[0]);
     prBox.innerHTML = `
-      <div class="stat-card"><div class="val">${(longest.distance/1000).toFixed(2)}<small> km</small></div><div class="lbl">최장 거리</div></div>
-      <div class="stat-card"><div class="val">${fmtPace(fastest.duration, fastest.distance)}</div><div class="lbl">최고 페이스</div></div>
-      <div class="stat-card"><div class="val">${fmtTime(longestTime.duration)}</div><div class="lbl">최장 시간</div></div>
+      <div class="stat-card gold"><div class="val">${(longest.distance/1000).toFixed(2)}<small> km</small></div><div class="lbl">최장 거리</div></div>
+      <div class="stat-card gold"><div class="val">${fmtPace(fastest.duration, fastest.distance)}</div><div class="lbl">최고 페이스</div></div>
+      <div class="stat-card gold"><div class="val">${fmtTime(longestTime.duration)}</div><div class="lbl">최장 시간</div></div>
     `;
   }
 
@@ -816,16 +1063,19 @@ function renderRunHome(){
     return;
   }
   const recent = runs.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).slice(0,5);
-  listBox.innerHTML = recent.map(r=>`
+  listBox.innerHTML = recent.map(r=>{
+    const kcal = estimateRunCalories(r.distance);
+    return `
     <div class="hist-item">
       <div class="hist-icon run">${ICON_RUN}</div>
       <div class="hist-body">
         <div class="hist-title">${(r.distance/1000).toFixed(2)}km · ${fmtTime(r.duration)}</div>
-        <div class="hist-sub">${fmtDate(r.date)} · 페이스 ${fmtPace(r.duration, r.distance)}/km</div>
+        <div class="hist-sub">${fmtDate(r.date)} · 페이스 ${fmtPace(r.duration, r.distance)}/km${kcal!==null ? ` · ${kcal}kcal` : ''}</div>
       </div>
       <div class="hist-del" data-id="${r.id}">✕</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   $$('#runRecentList .hist-del').forEach(el=>{
     el.addEventListener('click', ()=>{
       if(!confirm('이 기록을 삭제할까요?')) return;
@@ -837,6 +1087,34 @@ function renderRunHome(){
 }
 renderRunControls();
 renderRunHome();
+
+/* ===== 러닝 기록 직접 입력 ===== */
+$('#btnManualRunToggle').addEventListener('click', ()=>{
+  const card = $('#manualRunCard');
+  const show = card.style.display === 'none';
+  card.style.display = show ? '' : 'none';
+  $('#btnManualRunToggle').textContent = show ? '취소' : '+ 직접 입력';
+  if(show) $('#manualRunDate').value = todayKey();
+});
+$('#btnSaveManualRun').addEventListener('click', ()=>{
+  const dateStr = $('#manualRunDate').value;
+  const distKm = parseFloat($('#manualRunDist').value);
+  const h = parseInt($('#manualRunH').value)||0;
+  const m = parseInt($('#manualRunM').value)||0;
+  const s = parseInt($('#manualRunS').value)||0;
+  const durationSec = h*3600 + m*60 + s;
+  if(!dateStr){ showToast('날짜를 선택해주세요'); return; }
+  if(!distKm || distKm<=0){ showToast('거리를 입력해주세요'); return; }
+  if(durationSec<=0){ showToast('시간을 입력해주세요'); return; }
+  const runs = load('wa_runs', []);
+  runs.unshift({id:Date.now(), date:`${dateStr}T12:00:00+09:00`, duration:durationSec, distance:Math.round(distKm*1000)});
+  save('wa_runs', runs);
+  showToast(`기록 저장완료 · ${distKm.toFixed(2)}km`);
+  $('#manualRunDist').value=''; $('#manualRunH').value=''; $('#manualRunM').value=''; $('#manualRunS').value='';
+  $('#manualRunCard').style.display = 'none';
+  $('#btnManualRunToggle').textContent = '+ 직접 입력';
+  renderRunHome();
+});
 
 /* ============ 헬스장 - 바디맵 ============ */
 // 상체/하체/코어/유산소 대분류 -> 세부 부위. sub가 1개면 바로 토글되는 leaf, 여러개면 펼쳐지는 그룹
@@ -1193,8 +1471,12 @@ function renderRecList(){
   if(list.length===0){
     $('#recList').innerHTML = bodyMuscles.length ? '<div class="today-empty">해당 부위 추천 운동이 아직 없어요. 아래에서 직접 입력하세요</div>' : '';
   } else {
+    const frontList = list.filter(ex=>ex.view==='front');
+    const backList = list.filter(ex=>ex.view==='back');
+    const mixedView = frontList.length>0 && backList.length>0;
     const renderCard = ex => {
       const photoSrc = (PHOTO_DATA[ex.photo]||[])[0];
+      const viewTag = mixedView ? `<span class="rec-view-tag">${ex.view==='front'?'정면':'후면'}</span>` : '';
       return `
       <div class="rec-card" data-name="${ex.name}">
         <div class="rec-photo-wrap">
@@ -1202,15 +1484,13 @@ function renderRecList(){
         </div>
         <div class="rec-mini-wrap">${bodyFigureHTML({view:ex.view, fineRegions:ex.regions, mini:true})}</div>
         <div>
-          <div class="rec-group-tag">${MUSCLE_LABEL[ex.muscle]}</div><span class="rec-view-tag">${ex.view==='front'?'정면':'후면'}</span>
+          <div class="rec-group-tag">${MUSCLE_LABEL[ex.muscle]}</div>${viewTag}
           <div class="rec-name">${ex.name}<span class="rec-name-en">${ex.nameEn}</span></div>
           <div class="rec-muscle">${ex.regions.map(r=>REGION_LABEL[r]).join(' · ')} 타겟</div>
         </div>
       </div>`;
     };
-    const frontList = list.filter(ex=>ex.view==='front');
-    const backList = list.filter(ex=>ex.view==='back');
-    if(frontList.length && backList.length){
+    if(mixedView){
       $('#recList').innerHTML =
         `<div class="rec-view-heading">정면에서 보이는 운동</div>` + frontList.map(renderCard).join('') +
         `<div class="rec-view-heading">후면에서 보이는 운동</div>` + backList.map(renderCard).join('');
@@ -1603,20 +1883,25 @@ function trendChartSVG(points, fmtVal){
   const area = line + ` L${coords[coords.length-1].x.toFixed(1)},${base} L${coords[0].x.toFixed(1)},${base} Z`;
   const last = coords[coords.length-1];
   const gid = 'tcg' + Math.random().toString(36).slice(2,9);
+  const lid = 'tcl' + Math.random().toString(36).slice(2,9);
   const dots = coords.map((c,i)=>{
     const isLast = i===coords.length-1;
-    return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast?5:3.5}" fill="var(--gold)" stroke="var(--card)" stroke-width="2"/>`;
+    return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast?5:3.5}" fill="${isLast?`url(#${lid})`:'var(--gold)'}" stroke="var(--card)" stroke-width="2"/>`;
   }).join('');
   return `<svg viewBox="0 0 ${W} ${H}" class="pr-chart-svg" preserveAspectRatio="none">
     <defs>
       <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="var(--gold)" stop-opacity="0.25"/>
+        <stop offset="0%" stop-color="var(--gold)" stop-opacity="0.28"/>
         <stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="${lid}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="var(--pink-light)"/>
+        <stop offset="100%" stop-color="var(--gold)"/>
       </linearGradient>
     </defs>
     <line x1="${padX}" y1="${base}" x2="${W-padX}" y2="${base}" stroke="var(--line)" stroke-width="1"/>
     <path d="${area}" fill="url(#${gid})"/>
-    <path d="${line}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${line}" fill="none" stroke="url(#${lid})" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
     ${dots}
     <text x="${last.x}" y="${Math.max(10,last.y-10)}" text-anchor="${last.x>W-40?'end':'middle'}" font-size="11" font-weight="800" fill="var(--gold)">${fmtVal(last.value)}</text>
   </svg>
@@ -1677,11 +1962,12 @@ function renderDayRecords(){
 
   box.innerHTML = items.map(it=>{
     if(it.type==='run'){
+      const kcal = estimateRunCalories(it.distance);
       return `<div class="hist-item">
         <div class="hist-icon run">${ICON_RUN}</div>
         <div class="hist-body">
           <div class="hist-title">${(it.distance/1000).toFixed(2)}km · ${fmtTime(it.duration)}</div>
-          <div class="hist-sub">평균 페이스 ${fmtPace(it.duration, it.distance)}/km</div>
+          <div class="hist-sub">평균 페이스 ${fmtPace(it.duration, it.distance)}/km${kcal!==null ? ` · ${kcal}kcal` : ''}</div>
         </div>
         <div class="hist-del" data-type="run" data-id="${it.id}">✕</div>
       </div>`;
