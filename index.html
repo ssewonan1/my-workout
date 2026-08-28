@@ -73,7 +73,7 @@ header{
 h1{font-size:1.5rem; font-weight:800; margin-top:4px; letter-spacing:-0.02em;}
 
 /* main content */
-main{flex:1; padding:4px 20px 100px; overflow-x:hidden;}
+main{flex:1; padding:4px 20px 150px; min-width:0;}
 .panel{display:none; animation:fadeIn .35s cubic-bezier(0.16,1,0.3,1) both;}
 .panel.active{display:block;}
 @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
@@ -800,6 +800,7 @@ $$('.nav-btn').forEach(btn=>{
     $$('.panel').forEach(p=>p.classList.remove('active'));
     $(`#panel-${tab}`).classList.add('active');
     $('#pageTitle').textContent = titles[tab];
+    $('.app').scrollTop = 0;
     if(tab==='history') renderHistory();
     if(tab==='run') renderRunHome();
   });
@@ -1119,17 +1120,21 @@ $('#btnSaveManualRun').addEventListener('click', ()=>{
 /* ============ 헬스장 - 바디맵 ============ */
 // 상체/하체/코어/유산소 대분류 -> 세부 부위. sub가 1개면 바로 토글되는 leaf, 여러개면 펼쳐지는 그룹
 const TOP_GROUPS = [
-  {key:'upper', label:'상체', sub:['chest','back','shoulder','biceps','triceps']},
+  {key:'upper', label:'상체', sub:['chest','back','shoulder','arm']},
   {key:'lower', label:'하체', sub:['thigh','calves','hip']},
   {key:'core', label:'코어', sub:['core']},
   {key:'cardio', label:'유산소', sub:['cardio']},
 ];
 const MUSCLE_LABEL = {
-  chest:'가슴', back:'등', shoulder:'어깨', biceps:'이두', triceps:'삼두',
+  chest:'가슴', back:'등', shoulder:'어깨', biceps:'이두', triceps:'삼두', arm:'팔',
   thigh:'허벅지', calves:'종아리', hip:'힙',
   core:'코어', cardio:'유산소',
 };
 const VIEW_OF = {chest:'front', core:'front', biceps:'front', back:'back', triceps:'back', hip:'back'};
+// 이두/삼두처럼 UI에서는 하나의 칩(팔)으로 합쳐서 보여주되, 내부적으로는 각자의 부위로 관리
+const MUSCLE_GROUP_MEMBERS = {arm:['biceps','triceps']};
+function groupMembers(key){ return MUSCLE_GROUP_MEMBERS[key] || [key]; }
+function isMuscleKeySelected(key){ return groupMembers(key).some(m=>selectedMuscles.has(m)); }
 // 인체 사진(420x980 기준) 위 자극부위 좌표 - %
 const MUSCLE_REGIONS = {
   front: {
@@ -1383,12 +1388,13 @@ function bodyFigureHTML({view='front', highlight=new Set(), orderMap=null, inter
 let expandedGroups = new Set(['upper']); // 처음엔 상체를 펼쳐서 보여줌
 
 function toggleMuscle(key){
-  if(selectedMuscles.has(key)){
-    selectedMuscles.delete(key);
-    selectionOrder = selectionOrder.filter(k=>k!==key);
+  const members = groupMembers(key);
+  if(members.every(m=>selectedMuscles.has(m))){
+    members.forEach(m=>{ selectedMuscles.delete(m); selectionOrder = selectionOrder.filter(k=>k!==m); });
   } else {
-    selectedMuscles.add(key);
-    selectionOrder.push(key);
+    members.forEach(m=>{
+      if(!selectedMuscles.has(m)){ selectedMuscles.add(m); selectionOrder.push(m); }
+    });
     if(VIEW_OF[key]) bodyView = VIEW_OF[key];
   }
   renderBodyMap();
@@ -1397,10 +1403,10 @@ function toggleMuscle(key){
 function toggleGroupExpand(key){
   const g = TOP_GROUPS.find(x=>x.key===key);
   if(g.sub.length===1){ toggleMuscle(g.sub[0]); return; }
-  const selectedSubs = g.sub.filter(s=>selectedMuscles.has(s));
+  const selectedSubs = g.sub.filter(s=>isMuscleKeySelected(s));
   if(selectedSubs.length){
     // 이미 뭔가 선택된 그룹을 다시 누르면 통째로 선택 해제
-    selectedSubs.forEach(s=>{ selectedMuscles.delete(s); selectionOrder = selectionOrder.filter(k=>k!==s); });
+    selectedSubs.forEach(s=>{ groupMembers(s).forEach(m=>{ selectedMuscles.delete(m); selectionOrder = selectionOrder.filter(k=>k!==m); }); });
     expandedGroups.delete(key);
   } else {
     if(expandedGroups.has(key)) expandedGroups.delete(key); else expandedGroups.add(key);
@@ -1410,11 +1416,15 @@ function toggleGroupExpand(key){
 
 function toggleGroupAll(key){
   const g = TOP_GROUPS.find(x=>x.key===key);
-  const allOn = g.sub.every(s=>selectedMuscles.has(s));
+  const allOn = g.sub.every(s=>isMuscleKeySelected(s));
   g.sub.forEach(s=>{
-    const has = selectedMuscles.has(s);
-    if(allOn && has){ selectedMuscles.delete(s); selectionOrder = selectionOrder.filter(k=>k!==s); }
-    if(!allOn && !has){ selectedMuscles.add(s); selectionOrder.push(s); if(VIEW_OF[s]) bodyView = VIEW_OF[s]; }
+    const members = groupMembers(s);
+    if(allOn){
+      members.forEach(m=>{ selectedMuscles.delete(m); selectionOrder = selectionOrder.filter(k=>k!==m); });
+    } else {
+      members.forEach(m=>{ if(!selectedMuscles.has(m)){ selectedMuscles.add(m); selectionOrder.push(m); } });
+      if(VIEW_OF[s]) bodyView = VIEW_OF[s];
+    }
   });
   renderBodyMap();
 }
@@ -1422,8 +1432,8 @@ function toggleGroupAll(key){
 function renderBodyMap(){
   $('#muscleChips').innerHTML = TOP_GROUPS.map(g=>{
     const isLeaf = g.sub.length===1;
-    const selectedSubs = g.sub.filter(s=>selectedMuscles.has(s));
-    const active = isLeaf ? selectedMuscles.has(g.sub[0]) : selectedSubs.length>0;
+    const selectedSubs = g.sub.filter(s=>isMuscleKeySelected(s));
+    const active = isLeaf ? isMuscleKeySelected(g.sub[0]) : selectedSubs.length>0;
     const open = expandedGroups.has(g.key);
     const summary = (!isLeaf && selectedSubs.length) ? selectedSubs.map(s=>MUSCLE_LABEL[s]).join(', ') : '';
     let html = `<div class="acc-item ${open?'open':''}">
@@ -1434,10 +1444,10 @@ function renderBodyMap(){
         ${isLeaf ? `<span class="acc-check">${active?'선택됨':'탭하여 선택'}</span>` : '<span class="acc-chevron">›</span>'}
       </button>`;
     if(!isLeaf){
-      const allOn = g.sub.every(s=>selectedMuscles.has(s));
+      const allOn = g.sub.every(s=>isMuscleKeySelected(s));
       html += `<div class="acc-body"><div class="acc-body-inner"><div class="acc-subgrid">
         <button class="chip sub-all ${allOn?'active':''}" data-allgroup="${g.key}">전체 선택</button>
-        ${g.sub.map(s=>`<button class="chip sub-chip ${selectedMuscles.has(s)?'active':''}" data-key="${s}">${MUSCLE_LABEL[s]}</button>`).join('')}
+        ${g.sub.map(s=>`<button class="chip sub-chip ${isMuscleKeySelected(s)?'active':''}" data-key="${s}">${MUSCLE_LABEL[s]}</button>`).join('')}
       </div></div></div>`;
     }
     return html + `</div>`;
@@ -1456,9 +1466,27 @@ function renderBodyMap(){
   $$('#bodySvgWrap [data-muscle]').forEach(el=>el.addEventListener('click', ()=>toggleMuscle(el.dataset.muscle)));
 }
 
+// 이두+삼두가 둘 다 선택돼있으면 태그 목록엔 "팔" 하나로 합쳐서 보여줌
+function selectedDisplayGroups(){
+  const consumed = new Set();
+  const result = [];
+  selectedMuscles.forEach(m=>{
+    if(consumed.has(m)) return;
+    const groupKey = Object.keys(MUSCLE_GROUP_MEMBERS).find(gk=> MUSCLE_GROUP_MEMBERS[gk].includes(m) && MUSCLE_GROUP_MEMBERS[gk].every(mm=>selectedMuscles.has(mm)));
+    if(groupKey){
+      MUSCLE_GROUP_MEMBERS[groupKey].forEach(mm=>consumed.add(mm));
+      result.push(groupKey);
+    } else {
+      consumed.add(m);
+      result.push(m);
+    }
+  });
+  return result;
+}
+
 function renderRecList(){
   const muscles = [...selectedMuscles];
-  $('#selectedChipsView').innerHTML = muscles.map(k=>`<span class="tag">${MUSCLE_LABEL[k]}</span>`).join('');
+  $('#selectedChipsView').innerHTML = selectedDisplayGroups().map(k=>`<span class="tag">${MUSCLE_LABEL[k]}</span>`).join('');
 
   const isCardio = muscles.includes('cardio');
   const bodyMuscles = muscles.filter(k=>k!=='cardio');
